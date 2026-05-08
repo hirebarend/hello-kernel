@@ -3,6 +3,40 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "limine.h"
+
+// ---------------------------------------------------------------------------
+// Limine boot protocol requests
+// ---------------------------------------------------------------------------
+// Limine scans the loaded kernel binary for these structs by magic number
+// and fills in their `response` fields before jumping to kmain. We tag each
+// one with `used` so the compiler emits it even though no C++ code reads it,
+// and place them in dedicated sections that the linker script KEEPs so the
+// link-time garbage collector doesn't drop them.
+
+// Declare which revision of the Limine boot protocol we speak. Without this
+// marker Limine considers the kernel incompatible and refuses to boot.
+__attribute__((used, section(".limine_requests")))
+static volatile LIMINE_BASE_REVISION(3);
+
+// Ask Limine for a linear framebuffer. We don't draw to it yet, but having a
+// real request in the binary is the simplest end-to-end test that Limine sees
+// our structs and writes responses into them.
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_framebuffer_request framebuffer_request = {
+    .id = LIMINE_FRAMEBUFFER_REQUEST,
+    .revision = 0,
+    .response = nullptr,
+};
+
+// Start/end markers bracket the request list so Limine knows where to stop
+// scanning. They live in their own sections so the linker script can place
+// them immediately before and after the requests block.
+__attribute__((used, section(".limine_requests_start")))
+static volatile LIMINE_REQUESTS_START_MARKER;
+
+__attribute__((used, section(".limine_requests_end")))
+static volatile LIMINE_REQUESTS_END_MARKER;
 
 namespace {
 

@@ -32,6 +32,16 @@ SECTIONS
        have to map a page as both executable and read-only. */
     . = ALIGN(4K);
 
+    /* Limine requests live in rodata. KEEP() prevents the linker's
+       --gc-sections from discarding them, since nothing in our C++ code
+       references them by name. The start/end markers must bracket the
+       requests block so Limine's scanner can find the boundaries. */
+    .limine_requests : {
+        KEEP(*(.limine_requests_start))
+        KEEP(*(.limine_requests))
+        KEEP(*(.limine_requests_end))
+    } :rodata
+
     .rodata : {
         *(.rodata .rodata.*)
     } :rodata
